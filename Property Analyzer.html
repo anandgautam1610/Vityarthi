@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Estate Utility App</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .card { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06); }
+        .tab-button.active { border-bottom: 3px solid #3b82f6; color: #3b82f6; font-weight: 600; }
+        .result-box { background-color: #e0f2f1; color: #0d9488; border-left: 4px solid #0d9488; }
+    </style>
+</head>
+<body>
+    <div id="app" class="min-h-screen p-4 sm:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">Real Estate Project Utility Hub</h1>
+            <p class="text-lg text-gray-500 mt-2">Simplify property calculation, documentation, and information retrieval.</p>
+            <p class="text-xs mt-2 text-gray-400">User ID: <span id="user-id">Loading...</span> | App ID: <span id="app-id">Loading...</span></p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="max-w-4xl mx-auto mb-6 bg-white p-2 rounded-xl shadow-lg flex justify-between space-x-2">
+            <button class="tab-button active flex-1 py-3 px-4 text-center text-gray-600 transition duration-150 rounded-lg hover:bg-gray-50" data-tab="calculation">
+                Valuation & Tax
+            </button>
+            <button class="tab-button flex-1 py-3 px-4 text-center text-gray-600 transition duration-150 rounded-lg hover:bg-gray-50" data-tab="broker">
+                Broker Information
+            </button>
+            <button class="tab-button flex-1 py-3 px-4 text-center text-gray-600 transition duration-150 rounded-lg hover:bg-gray-50" data-tab="agreement">
+                Rental Agreement
+            </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="content-container" class="max-w-4xl mx-auto p-4 sm:p-6 bg-white card rounded-xl">
+            <!-- Content will be injected here -->
+            <div id="tab-calculation" class="tab-content">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700 border-b pb-2">Property Calculation</h2>
+                
+                <!-- Land Value Calculator -->
+                <div class="mb-8 p-4 border rounded-lg bg-indigo-50">
+                    <h3 class="text-xl font-medium mb-3 text-indigo-700">Land Value Calculator (Area-based)</h3>
+                    <div class="grid sm:grid-cols-3 gap-4">
+                        <input type="number" id="land-area" placeholder="Area (Sq. Feet)" class="p-3 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="number" id="price-per-sqft" placeholder="Price per Sq. Ft (₹)" class="p-3 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <button onclick="calculateLandValue()" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 transition duration-150 font-semibold">
+                            Calculate Value
+                        </button>
+                    </div>
+                    <div id="land-value-result" class="mt-4 p-3 rounded-lg result-box font-medium hidden"></div>
+                </div>
+
+                <!-- Property Tax Calculator -->
+                <div class="p-4 border rounded-lg bg-teal-50">
+                    <h3 class="text-xl font-medium mb-3 text-teal-700">Annual Property Tax Calculator</h3>
+                    <div class="grid sm:grid-cols-4 gap-4">
+                        <input type="number" id="annual-value" placeholder="Annual Property Value (₹)" class="p-3 border rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                        <input type="number" id="tax-rate" placeholder="Tax Rate (%)" value="12" class="p-3 border rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                        <input type="number" id="rebate" placeholder="Rebate (%) (e.g., 20)" value="0" class="p-3 border rounded-lg focus:ring-teal-500 focus:border-teal-500">
+                        <button onclick="calculatePropertyTax()" class="bg-teal-600 text-white p-3 rounded-lg hover:bg-teal-700 transition duration-150 font-semibold">
+                            Calculate Tax
+                        </button>
+                    </div>
+                    <div id="property-tax-result" class="mt-4 p-3 rounded-lg result-box font-medium hidden"></div>
+                </div>
+
+            </div>
+
+            <div id="tab-broker" class="tab-content hidden">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700 border-b pb-2">Broker Information Management</h2>
+                <p class="text-sm text-gray-500 mb-4">This module stores broker contacts privately using Firestore.</p>
+                
+                <!-- Broker Input Form -->
+                <div class="mb-6 p-4 border rounded-lg bg-blue-50">
+                    <h3 class="text-xl font-medium mb-3 text-blue-700">Add New Broker</h3>
+                    <div class="grid sm:grid-cols-3 gap-4">
+                        <input type="text" id="broker-name" placeholder="Broker Name" class="p-3 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <input type="text" id="broker-contact" placeholder="Phone/Email" class="p-3 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <button onclick="addBroker()" class="bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition duration-150 font-semibold">
+                            Save Broker
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Broker List -->
+                <div class="mt-8">
+                    <h3 class="text-xl font-medium mb-3 text-gray-700">My Saved Brokers</h3>
+                    <div id="broker-list" class="space-y-3">
+                        <!-- Brokers will be loaded here -->
+                        <div id="loading-brokers" class="text-center p-4 text-gray-500">Loading brokers...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-agreement" class="tab-content hidden">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700 border-b pb-2">Rental Agreement Generator</h2>
+                <p class="text-sm text-gray-500 mb-4">Fill out the details to generate a simple, standardized rental agreement text.</p>
+                
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <input type="text" id="tenant-name" placeholder="Tenant Name" class="p-3 border rounded-lg">
+                    <input type="text" id="landlord-name" placeholder="Landlord Name" class="p-3 border rounded-lg">
+                    <input type="text" id="property-address" placeholder="Property Address" class="p-3 border rounded-lg col-span-2">
+                    <input type="number" id="rent-amount" placeholder="Monthly Rent (₹)" class="p-3 border rounded-lg">
+                    <input type="number" id="deposit-amount" placeholder="Security Deposit (₹)" class="p-3 border rounded-lg">
+                    <input type="date" id="start-date" class="p-3 border rounded-lg">
+                    <input type="text" id="term-months" placeholder="Term (Months), e.g., 12" class="p-3 border rounded-lg">
+                </div>
+
+                <button onclick="generateAgreement()" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition duration-150 font-semibold mb-6">
+                    Generate Agreement Text
+                </button>
+
+                <!-- Agreement Output -->
+                <div id="agreement-output-container" class="mt-4 hidden">
+                    <h3 class="text-xl font-medium mb-3 text-gray-700">Generated Agreement</h3>
+                    <textarea id="agreement-text" rows="15" class="w-full p-4 border rounded-lg font-mono text-sm bg-gray-50" readonly></textarea>
+                    <button onclick="copyAgreement()" class="mt-3 bg-gray-700 text-white p-2 rounded-lg text-sm hover:bg-gray-800 transition duration-150">
+                        Copy to Clipboard
+                    </button>
+                    <span id="copy-message" class="ml-4 text-sm text-green-600 hidden">Copied!</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Notification Message Box -->
+        <div id="notification-box" class="fixed bottom-4 right-4 bg-red-600 text-white p-3 rounded-lg shadow-xl hidden transition duration-300"></div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // IMPORTANT: Global variables provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth;
+        let currentUserId = null;
+
+        // --- Utility Functions ---
+        function showNotification(message, isError = false) {
+            const box = document.getElementById('notification-box');
+            box.textContent = message;
+            box.className = `fixed bottom-4 right-4 text-white p-3 rounded-lg shadow-xl transition duration-300 ${isError ? 'bg-red-600' : 'bg-blue-600'}`;
+            box.style.display = 'block';
+            setTimeout(() => {
+                box.style.display = 'none';
+            }, 3000);
+        }
+        window.showNotification = showNotification; // Attach to window for use in non-module functions
+
+        // --- Firebase Initialization and Authentication ---
+        async function initializeFirebase() {
+            try {
+                if (Object.keys(firebaseConfig).length === 0) {
+                    throw new Error("Firebase configuration is missing.");
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Set Firestore log level for debugging
+                setLogLevel('Debug');
+
+                document.getElementById('app-id').textContent = appId;
+                
+                // 1. Authenticate User
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // 2. Auth State Change Listener
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUserId = user.uid;
+                        document.getElementById('user-id').textContent = currentUserId;
+                        // Start real-time listeners only after authentication is complete
+                        setupRealtimeListeners(); 
+                    } else {
+                        // This should ideally not happen after signInWithCustomToken/signInAnonymously
+                        showNotification("Authentication failed. Using anonymous ID.", true);
+                        currentUserId = crypto.randomUUID();
+                        document.getElementById('user-id').textContent = `Anon-${currentUserId.substring(0, 8)}`;
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                showNotification(`Fatal Error: ${error.message}`, true);
+            }
+        }
+
+        // --- Firestore Real-time Data Listener ---
+        function setupRealtimeListeners() {
+            if (!db || !currentUserId) return;
+
+            // Define the collection path for private data
+            const brokerCollectionPath = `/artifacts/${appId}/users/${currentUserId}/brokers`;
+            const brokersRef = collection(db, brokerCollectionPath);
+            const q = query(brokersRef);
+            
+            // onSnapshot provides real-time updates
+            onSnapshot(q, (snapshot) => {
+                const brokers = [];
+                snapshot.forEach((doc) => {
+                    brokers.push({ id: doc.id, ...doc.data() });
+                });
+                renderBrokers(brokers);
+            }, (error) => {
+                console.error("Error fetching brokers:", error);
+                showNotification("Could not load broker data.", true);
+            });
+        }
+
+        // --- Broker CRUD Operations (Publicly available via window) ---
+
+        /** Renders the list of brokers dynamically */
+        function renderBrokers(brokers) {
+            const listContainer = document.getElementById('broker-list');
+            listContainer.innerHTML = '';
+            document.getElementById('loading-brokers').style.display = 'none';
+
+            if (brokers.length === 0) {
+                listContainer.innerHTML = '<p class="text-gray-500 italic p-4 border rounded-lg bg-gray-50">No brokers saved yet. Add one above.</p>';
+                return;
+            }
+
+            brokers.forEach(broker => {
+                const brokerDiv = document.createElement('div');
+                brokerDiv.className = 'flex items-center justify-between p-3 bg-white rounded-lg border hover:shadow-md transition duration-150';
+                brokerDiv.innerHTML = `
+                    <div>
+                        <p class="font-semibold text-gray-800">${broker.name}</p>
+                        <p class="text-sm text-gray-500">${broker.contact}</p>
+                    </div>
+                    <button data-id="${broker.id}" class="delete-btn text-red-500 hover:text-red-700 p-2 rounded-full transition duration-150">
+                        <!-- Icon: Trash -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011 1v6a1 1 0 11-2 0V9a1 1 0 011-1zm5 0a1 1 0 011 1v6a1 1 0 11-2 0V9a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+                listContainer.appendChild(brokerDiv);
+            });
+
+            // Add event listeners for delete buttons
+            listContainer.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const brokerId = e.currentTarget.getAttribute('data-id');
+                    deleteBroker(brokerId);
+                });
+            });
+        }
+
+        async function addBroker() {
+            if (!db || !currentUserId) {
+                showNotification("System not ready. Please wait for initialization.", true);
+                return;
+            }
+            const nameInput = document.getElementById('broker-name');
+            const contactInput = document.getElementById('broker-contact');
+            const name = nameInput.value.trim();
+            const contact = contactInput.value.trim();
+
+            if (!name || !contact) {
+                showNotification("Please enter both name and contact information.", true);
+                return;
+            }
+
+            try {
+                const brokerCollectionPath = `/artifacts/${appId}/users/${currentUserId}/brokers`;
+                await addDoc(collection(db, brokerCollectionPath), {
+                    name: name,
+                    contact: contact,
+                    timestamp: new Date()
+                });
+                showNotification(`Broker '${name}' added successfully!`);
+                nameInput.value = '';
+                contactInput.value = '';
+            } catch (error) {
+                console.error("Error adding broker: ", error);
+                showNotification("Failed to add broker. Check console for details.", true);
+            }
+        }
+        window.addBroker = addBroker;
+
+        async function deleteBroker(brokerId) {
+            if (!db || !currentUserId) {
+                showNotification("System not ready.", true);
+                return;
+            }
+
+            try {
+                const brokerCollectionPath = `/artifacts/${appId}/users/${currentUserId}/brokers`;
+                await deleteDoc(doc(db, brokerCollectionPath, brokerId));
+                showNotification("Broker deleted.");
+            } catch (error) {
+                console.error("Error deleting broker: ", error);
+                showNotification("Failed to delete broker. Check console for details.", true);
+            }
+        }
+        // Note: deleteBroker is called from within renderBrokers, no need to attach to window.
+        
+        // Initialize Firebase on load
+        initializeFirebase();
+
+        // --- Tab Switching Logic (Non-Module Functions) ---
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTab = button.getAttribute('data-tab');
+
+                // Update active button state
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // Show/Hide content
+                tabContents.forEach(content => {
+                    if (content.id === `tab-${targetTab}`) {
+                        content.classList.remove('hidden');
+                    } else {
+                        content.classList.add('hidden');
+                    }
+                });
+            });
+        });
+
+    </script>
+    
+    <!-- Core Application Logic (Non-module functions) -->
+    <script>
+        // --- Module 1: Land Value Calculation ---
+        function calculateLandValue() {
+            const area = parseFloat(document.getElementById('land-area').value);
+            const pricePerSqFt = parseFloat(document.getElementById('price-per-sqft').value);
+            const resultBox = document.getElementById('land-value-result');
+
+            if (isNaN(area) || isNaN(pricePerSqFt) || area <= 0 || pricePerSqFt <= 0) {
+                resultBox.classList.remove('result-box', 'hidden');
+                resultBox.classList.add('bg-red-100', 'text-red-700', 'border-red-700');
+                resultBox.textContent = 'Please enter valid, positive numbers for area and price.';
+                window.showNotification('Invalid input for Land Value.', true);
+                return;
+            }
+
+            const totalValue = area * pricePerSqFt;
+            const formattedValue = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalValue);
+
+            resultBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'border-red-700');
+            resultBox.classList.add('result-box');
+            resultBox.innerHTML = `
+                <p class="text-lg"><strong>Total Land Value:</strong> ${formattedValue}</p>
+                <p class="text-sm mt-1">Calculated from ${area.toLocaleString()} Sq. Ft. @ ${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(pricePerSqFt)} / Sq. Ft.</p>
+            `;
+            window.showNotification('Land Value calculated!');
+        }
+
+        // --- Module 2: Property Tax Calculation ---
+        function calculatePropertyTax() {
+            const annualValue = parseFloat(document.getElementById('annual-value').value);
+            const taxRate = parseFloat(document.getElementById('tax-rate').value); // As a percentage
+            const rebatePercentage = parseFloat(document.getElementById('rebate').value); // As a percentage
+            const resultBox = document.getElementById('property-tax-result');
+
+            if (isNaN(annualValue) || isNaN(taxRate) || isNaN(rebatePercentage) || annualValue < 0 || taxRate < 0 || rebatePercentage < 0) {
+                resultBox.classList.remove('result-box', 'hidden');
+                resultBox.classList.add('bg-red-100', 'text-red-700', 'border-red-700');
+                resultBox.textContent = 'Please enter valid, non-negative numbers for all fields.';
+                window.showNotification('Invalid input for Property Tax.', true);
+                return;
+            }
+
+            // Tax = (Annual Value * Tax Rate / 100)
+            let grossTax = annualValue * (taxRate / 100);
+
+            // Apply Rebate
+            const rebateAmount = grossTax * (rebatePercentage / 100);
+            const netTax = grossTax - rebateAmount;
+
+            const formattedGrossTax = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(grossTax);
+            const formattedRebate = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(rebateAmount);
+            const formattedNetTax = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(netTax);
+
+            resultBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'border-red-700');
+            resultBox.classList.add('result-box');
+            resultBox.innerHTML = `
+                <p class="text-lg"><strong>Gross Annual Tax:</strong> ${formattedGrossTax}</p>
+                <p>Rebate Applied (${rebatePercentage}%): ${formattedRebate}</p>
+                <p class="text-xl mt-2 font-bold">Net Payable Tax: ${formattedNetTax}</p>
+            `;
+            window.showNotification('Property Tax calculated!');
+        }
+
+        // --- Module 3: Rental Agreement Generator ---
+        function generateAgreement() {
+            const tenantName = document.getElementById('tenant-name').value.trim();
+            const landlordName = document.getElementById('landlord-name').value.trim();
+            const propertyAddress = document.getElementById('property-address').value.trim();
+            const rentAmount = parseFloat(document.getElementById('rent-amount').value);
+            const depositAmount = parseFloat(document.getElementById('deposit-amount').value);
+            const startDate = document.getElementById('start-date').value;
+            const termMonths = parseInt(document.getElementById('term-months').value);
+
+            if (!tenantName || !landlordName || !propertyAddress || isNaN(rentAmount) || isNaN(depositAmount) || !startDate || isNaN(termMonths)) {
+                window.showNotification("Please fill in all agreement fields with valid data.", true);
+                return;
+            }
+
+            const rentFormatted = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(rentAmount);
+            const depositFormatted = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(depositAmount);
+            const agreementDate = new Date().toLocaleDateString('en-IN');
+            const termText = termMonths === 1 ? 'one month' : `${termMonths} months`;
+
+            const agreementText = `
+RENTAL AGREEMENT
+
+This Rental Agreement (hereinafter "Agreement") is made and entered into on this ${agreementDate} day, by and between:
+
+1. LANDLORD: ${landlordName}
+2. TENANT: ${tenantName}
+
+PROPERTY DETAILS:
+The Landlord hereby agrees to rent to the Tenant, and the Tenant agrees to rent from the Landlord, the property located at:
+${propertyAddress}
+
+TERM:
+The term of this Agreement shall be for ${termText}, commencing on ${new Date(startDate).toLocaleDateString('en-IN')} and ending on ${new Date(new Date(startDate).setMonth(new Date(startDate).getMonth() + termMonths)).toLocaleDateString('en-IN')}.
+
+RENT:
+The monthly rent shall be ${rentFormatted} (${rentAmount.toLocaleString('en-IN')} Rupees), payable in advance on the first day of each calendar month.
+
+SECURITY DEPOSIT:
+The Tenant shall pay the Landlord a Security Deposit of ${depositFormatted} (${depositAmount.toLocaleString('en-IN')} Rupees) upon signing this Agreement. This deposit shall be held by the Landlord for the duration of the tenancy.
+
+TERMINATION:
+Either party may terminate this agreement by providing a written notice of one calendar month.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement on the date first written above.
+
+_________________________                 _________________________
+LANDLORD SIGNATURE                      TENANT SIGNATURE
+(Name: ${landlordName})                        (Name: ${tenantName})
+            `.trim();
+
+            document.getElementById('agreement-text').value = agreementText;
+            document.getElementById('agreement-output-container').classList.remove('hidden');
+            window.showNotification('Agreement text generated!');
+        }
+
+        function copyAgreement() {
+            const textarea = document.getElementById('agreement-text');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); // For mobile devices
+
+            // Use execCommand('copy') as navigator.clipboard might fail in iframes
+            let success = false;
+            try {
+                success = document.execCommand('copy');
+            } catch (err) {
+                console.error('Copy failed:', err);
+            }
+
+            const copyMessage = document.getElementById('copy-message');
+            if (success) {
+                copyMessage.classList.remove('hidden');
+                setTimeout(() => copyMessage.classList.add('hidden'), 2000);
+            } else {
+                window.showNotification('Copy failed. Please copy manually.', true);
+            }
+        }
+    </script>
+</body>
+</html>
